@@ -34,9 +34,6 @@ step 3: compare past shortest path  (lowest Energy), s, with new path (different
 step 4: 
  *)
 
- let energy e_list =
-  Base.List.sum e_list
-
 let rec get_item_at_index i s count =
   match s with
   | h::t when i == count -> h
@@ -62,16 +59,28 @@ let next s =
       | h::t when h == city_to_swap2 -> next' t (city_to_swap1::acc) (count + 1)
     in List.rev(next' s [] 0)
 
-(* let run (s: 'a) (energy: 'a -> float) (next: ) t factor interval maxsteps *)
-let get_energy s matrix = 
-  let rec get_energy' acc start energy_matrix =
+let energy s matrix = 
+  let rec energy' acc start energy_matrix =
     match start with
     | [] -> acc
     | [tl] -> 
       let back_home_e = get_item_at_index tl (get_matrix_list 0 energy_matrix 0) 0 in
-      get_energy' (back_home_e::acc) [] energy_matrix
+      energy' (back_home_e+acc) [] energy_matrix
     | h1::h2::t -> 
       let energy = get_item_at_index h2 (get_matrix_list h1 energy_matrix 0) 0 in
-      get_energy' (energy::acc) (h2::t) energy_matrix
-    in List.rev (get_energy' [] s matrix)
+      energy' (energy+acc) (h2::t) energy_matrix
+    in energy' 0 s matrix
 
+(* let run (s: 'a) (energy: 'a -> float) (next: ) t factor interval maxsteps *)
+(* 
+s is the starting state
+energy is  a function with energy s  returning  the energy of state s
+next is a function with  next  s returning the next state
+t is the  starting temperature
+factor  is the factor by  which the temperature decreases (0 < factor < 1)
+innterval is  the temperature innterval (as explained above)
+maxsteps is the number of iterations to run  thee simulation (the kmax above)
+   *)
+
+let run s energy next t interval interval maxsteps =
+  
