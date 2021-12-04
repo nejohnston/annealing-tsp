@@ -1,86 +1,28 @@
-(*let build_matrix node_list =*)
-(*    let rec build_matrix' acc*)
-(*        match node_list with*)
-(*        | [] -> acc*)
-(*        | h :: t ->*)
+(* let temperature interval maxsteps = maxsteps/interval + 1 *)
+let probability current_path_energy neighbour_path_energy temp =
+  if neighbour_path_energy >= current_path_energy 
+    then Float.exp ((current_path_energy -. neighbour_path_energy) /. temp)
+    else 1.
 
+(* get teemperature *)
+let temperature current_iterations current_temp interval factor =
+  if current_iterations mod interval <> 0 
+    then current_temp 
+    else current_temp *. factor
 
-(* let print_matrix array = List.iter (Stdio.printf "%d ") array
-
-let line_fold acc line =
-    let split = Base.String.split line ~on:(Base.Char.of_string " ") in
-      List.fold_right split ~init:[] (fun x acc -> try (Base.Int.of_string x)::acc with Error -> acc) split
-
-let read_file file_name =
-  let ic = Stdio.In_channel.create file_name in
-    Stdio.In_channel.fold_lines ic ~init:[] ~f:(fun x acc -> line_fold acc line)
-
-let () =
-    let a = read_file "data.txt" in
-    List.iter (fun x -> Stdio.printf "%d " x) a *)
-
-
-(*
-List.iter and then over that list List.print
-*)
-
-(* 
-problem: find the shortest path from node a, visiting all nodes, and  back to node a
-how to solve
-step 1: initialize a random path
-step 1.1: calculate energy of path
-step 2: swap out two nodes
-step 3: compare past shortest path  (lowest Energy), s, with new path (different Energy), s'
-step 4: 
- *)
-
-let rec get_item_at_index i s count =
-  match s with
-  | h::t when i == count -> h
-  | _::t -> (get_item_at_index i t (count + 1))
-  | [] -> 0
-
-let rec get_matrix_list (i: int) (am: int list list) (count: int) = 
-  match am with
-  | [] -> []
-  | h::t when count == i -> h
-  | _::t -> (get_matrix_list i t (count + 1))
-
-let next s = 
-  let rand1 = (Random.int (List.length(s) - 1)) in 
-  let rand2 = (Random.int (List.length(s) - 1)) in 
-  let city_to_swap1 = get_item_at_index rand1 s 0 in
-  let city_to_swap2 = get_item_at_index rand2 s 0 in 
-    let rec next' s' acc count = 
-      match s' with
-      | [] -> acc
-      | h::t when h <> city_to_swap1 && h <> city_to_swap2 -> next' t (h::acc) (count + 1) 
-      | h::t when h == city_to_swap1 -> next' t (city_to_swap2::acc) (count + 1) 
-      | h::t when h == city_to_swap2 -> next' t (city_to_swap1::acc) (count + 1)
-    in List.rev(next' s [] 0)
-
-let energy s matrix = 
-  let rec energy' acc start energy_matrix =
-    match start with
-    | [] -> acc
-    | [tl] -> 
-      let back_home_e = get_item_at_index tl (get_matrix_list 0 energy_matrix 0) 0 in
-      energy' (back_home_e+acc) [] energy_matrix
-    | h1::h2::t -> 
-      let energy = get_item_at_index h2 (get_matrix_list h1 energy_matrix 0) 0 in
-      energy' (energy+acc) (h2::t) energy_matrix
-    in energy' 0 s matrix
-
-(* let run (s: 'a) (energy: 'a -> float) (next: ) t factor interval maxsteps *)
-(* 
-s is the starting state
-energy is  a function with energy s  returning  the energy of state s
-next is a function with  next  s returning the next state
-t is the  starting temperature
-factor  is the factor by  which the temperature decreases (0 < factor < 1)
-innterval is  the temperature innterval (as explained above)
-maxsteps is the number of iterations to run  thee simulation (the kmax above)
-   *)
-
-let run s energy next t interval interval maxsteps =
-  
+let run (s: 'a) energy (next: 'a -> 'a) (t: float) (factor: float) (interval: int) (maxsteps: int) =
+  let rec aux acc current temp = 
+  (* if acc does not equal maxsteps update values *)
+  (* i'm sure there's a better way to do this *)
+    if acc <> maxsteps then 
+      let current_temp = temperature temp factor acc interval in 
+      let neighbour = next current in 
+      let current_path_energy = (energy s) in 
+      let neighbour_path_energy = (energy neighbour) in 
+      let p = probability current_path_energy neighbour_path_energy current_temp in 
+      if p >= (Random.float 1.) 
+        then aux (acc + 1) neighbour current_temp 
+        else aux (acc + 1) current current_temp 
+    else ((energy current), current)
+  in
+  aux 1 s t
